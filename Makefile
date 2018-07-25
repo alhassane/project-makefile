@@ -6,7 +6,7 @@ DEFAULT_GOAL := help
 export MY_UID ?=$(shell id -u)
 export MY_GID ?=$(shell id -g)
 export REGISTRY ?=project
-export DOMAIN ?=alterway.dev
+export DOMAIN ?=alterway.devs
 export PROJECT_ROOT ?= $(shell pwd)
 
 export SITE_NAME ?=Project Service Core

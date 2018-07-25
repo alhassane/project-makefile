@@ -194,39 +194,6 @@ dashboard: init-volumes
 	@SERVICE_NAME=default && ANALYSE_PATH=$$ANALYSE_PATH && \
 	for tool in ${tools}; do ${docker-tools} run --rm php-cmd phing -f build.xml prepare:artifact-analyse dashboard:$$tool; done
 
-minify: init-volumes
-	@${docker-html-minifier} run --rm html-minifier sh -c "mv /tmp/www-build/${SERVICE_NAME}/current/logs/dashboard.html /tmp/www-build/${SERVICE_NAME}/current/logs/dashboard.uncompressed.html && html-minifier --collapse-boolean-attributes --collapse-whitespace --html5 --minify-css --minify-js --remove-attribute-quotes --remove-comments --remove-empty-attributes --remove-redundant-attributes --remove-script-type-attributes --remove-style-link-type-attributes --use-short-doctype -o /tmp/www-build/${SERVICE_NAME}/current/logs/dashboard.html /tmp/www-build/${SERVICE_NAME}/current/logs/dashboard.uncompressed.html && rm /tmp/www-build/${SERVICE_NAME}/current/logs/dashboard.uncompressed.html"
-
-#----------------------------------------------------------------------------------------------------------------------#
-#                                                       LOAD JOBS                                                     #
-#----------------------------------------------------------------------------------------------------------------------#
-# make job-gatling-create USERS_NBR=10000
-job-gatling-create: init-volumes
-	@if [ "${RESET}" = "true" ]; then make -B init && ${docker-phpunit} pull; fi; \
-        ENV_NAME=.env.gatling.orm && PHP_ENV=php.env.gatling.orm && \
-        ${docker-phpunit} up -d --build --force-recreate && \
-        sleep 5 && ${docker-phpunit} run --rm phpunit-php phing -f build.xml create:database doctrine:rebuild && \
-        ${docker-phpunit} run --rm phpunit-php php app/console sfynx:user:create --firstId=4 --lastId=$$USERS_NBR --pathData=/www-gatling/data --env=test${PROJECT_NAME}
-
-# make job-gatling-run CMD=start GATLING_PACKAGE=project GATLING_SCENARIOS='Connexion' GATLING_TARGET=project.first GATLING_URL='http://phpunit.alterway.dev' GATLING_STRATEGY=default
-job-gatling-run: init-volumes
-	@SERVICE_NAME=default && ${docker-tools} run --rm gatling $$CMD
-
-job-gatling-stop: init-volumes
-	@${docker-phpunit} stop &&  ${docker-phpunit} rm -f
-
-# make job-dia ENV_NAME=.env.test.orm PHP_ENV=php.env.orm tools="autodia" autodia
-job-dia: prepare-artifact-analyse
-	@${docker-tools} run --rm    diacenter perl /usr/local/bin/autodia.pl -l php -d ${ANALYSE_PATH} -r -o /www-build/test${PROJECT_NAME}/201603170000/logs/php/diacenter/autodia/actor.presentation.dia
-	#@for tool in ${tools} ; do ${docker-tools} run --rm    diacenter phing -f build.xml -Downeruser=$$USER static:$$tool ; done
-
-job-jmeter:
-	@docker run -dit --name jmslave01 ${REGISTRY}/jmserver /bin/bash && \
-	 docker run -dit --name jmslave02 ${REGISTRY}/jmserver /bin/bash && \
-	 docker run -dit --name jmslave03 ${REGISTRY}/jmserver /bin/bash && \
-	 docker run -dit --name jmmaster  ${REGISTRY}/jmmaster /bin/bash && \
-	 docker exec -i jmmaster sh -c 'cat > /jmeter/apache-jmeter-2.13/bin/docker-test.jmx' < ./www/app/config/jmeter/docker-test.jmx
-
 ########################################################################################################################
 ####                                           CONCATENATION OF COMMANDS                                            ####
 ########################################################################################################################
@@ -257,11 +224,3 @@ audit-security:
         -v /usr/lib/systemd:/usr/lib/systemd \
         -v /etc:/etc --label docker_bench_security \
         docker/docker-bench-security
-
-# make mysql-import DUMP_FILE="mydatabase_2017-06-21_01:14:48.sql"
-mysql-import:
-	#@docker exec -it database sh -c "mysql -u\$${MYSQL_USER} -p\$${MYSQL_PASSWORD} \$${MYSQL_DATABASE} < /tmp/data/drop_table.sql"
-	@docker exec -it database sh -c "mysql -u\$${MYSQL_USER} -p\$${MYSQL_PASSWORD} \$${MYSQL_DATABASE} < /tmp/data/dump_bdd/$$DUMP_FILE"
-
-schema-export:
-	@${docker-compose} run --rm php app/console doctrine:mapping:convert --force yaml /var/www/src

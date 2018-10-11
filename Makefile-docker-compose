@@ -98,7 +98,7 @@ up: init
 
 deploy: ## Start the stack (use current version of images)
 deploy:
-	@${docker-compose} up -d --build
+	@${docker-compose} up -d --build --force-recreate
 
 # make prepare-services SYMFONY__DOCTRINE__MIGRATION__OPTIONS='--debug false --currentVersion 1518433964'
 prepare-services: ## Execute the init command of the ${PHP_INIT_SERVICES} docker services

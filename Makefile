@@ -59,6 +59,7 @@ export LOCALIP ?=$(shell ip addr show | awk '$$1 == "inet" && $$3 == "brd" { sub
 
 export RELEASE_FILES ?="Resources/doc/index.md"
 export RELEASE_REMOTE ?=origin
+export RELEASE_VERSION=$(shell echo ${CURRENT_TAG}|sed -r s/v//)
 
 export CI_BUILD_REF_CUT=${CI_BUILD_REF:0:8}
 export CI_COMMIT_REF_NAME ?=develop
@@ -89,7 +90,7 @@ release:
 	@(git push --no-verify --delete ${RELEASE_REMOTE} `semver tag`) || true
 	@git tag `semver tag`
 	@git push --no-verify ${RELEASE_REMOTE} `semver tag`
-	@GIT_CB=$(git symbolic-ref --short HEAD) && git push --no-verify -u ${RELEASE_REMOTE} $(GIT_CB)
+	@GIT_CB=$(git symbolic-ref --short HEAD) && git push --no-verify --set-upstream ${RELEASE_REMOTE} $(GIT_CB)
 
 changelog: ## Create CHANGELOG file
 changelog:
